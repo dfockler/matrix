@@ -14,6 +14,8 @@ fn main() {
     println!("{:?}", matrix);
     println!("{:?}", mata);
 
-    let result = matrix.add(&mata);
-    println!("{:?}", result);
+    let sum = matrix.add(&mata);
+    let product = matrix.mult(&mata);
+    println!("{:?}", sum);
+    println!("{:?}", product);
 }

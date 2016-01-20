@@ -52,11 +52,11 @@ impl<T: Num + Clone> Matrix<T> {
     }
 
     pub fn mult(&self, m: &Matrix<T>) -> Matrix<T> {
-        let mut mat: Matrix<T> = Matrix::new(self.rows, self.cols); 
+        let mut vec: Vec<T> = Vec::new(); 
         for (a, b) in self.data.iter().zip(m.data.iter()) {
-            mat.data.push(a.clone() * b.clone());
+            vec.push(a.clone() * b.clone());
         }
-        mat
+        Matrix::new_with_data(self.rows, self.cols, vec)
     }
 
     pub fn dimensions(&self) -> (usize, usize) {
