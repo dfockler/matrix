@@ -14,9 +14,9 @@ fn main() {
     println!("{:?}", matrix);
     println!("{:?}", mata);
 
-    let sum = matrix.add(&mata);
+    let sum = matrix.add(&mata).unwrap();
     let product = matrix.mult(&mata);
-    println!("{:?}", sum);
+    println!("{}", sum);
     println!("{:?}", product);
 
     let mut mat = Matrix::new(2, 4);

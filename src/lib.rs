@@ -6,6 +6,8 @@
 
 extern crate num;
 
+use std::error::Error;
+use std::fmt;
 use num::Num;
 use num::Zero;
 
@@ -26,7 +28,7 @@ pub struct Matrix<T> {
 impl<T: Num + Clone> Matrix<T> {
     /// Returns a new Matrix with the given number of rows and columns set.
     /// All elements are set to zero
-    pub fn new(rows: usize, cols: usize) -> Matrix<T> {
+    pub fn new(rows: usize, cols: usize) -> Matrix<T>  {
         Matrix { 
             rows: rows,
             cols: cols,
@@ -39,7 +41,7 @@ impl<T: Num + Clone> Matrix<T> {
     ///
     /// TODO: Make this public and check data is the correct size
     /// given the rows/cols
-    fn new_with_data(rows: usize, cols: usize, data: Vec<T>) -> Matrix<T>{
+    fn new_with_data(rows: usize, cols: usize, data: Vec<T>) -> Matrix<T> {
         Matrix {
             rows: rows,
             cols: cols,
@@ -50,12 +52,16 @@ impl<T: Num + Clone> Matrix<T> {
     /// Performs an element-wise addition onto the Matrix
     ///
     /// TODO: Add error handling to ensure size compatibility
-    pub fn add(&self, m: &Matrix<T>) -> Matrix<T> {
-        let mut vec: Vec<T> = Vec::new(); 
-        for (a, b) in self.data.iter().zip(m.data.iter()) {
-            vec.push(a.clone() + b.clone());
+    pub fn add(&self, m: &Matrix<T>) -> Result<Matrix<T>, SizeError> {
+        if self.rows == m.rows && self.cols == m.cols {
+            let mut vec: Vec<T> = Vec::new(); 
+            for (a, b) in self.data.iter().zip(m.data.iter()) {
+                vec.push(a.clone() + b.clone());
+            }
+            Ok(Matrix::new_with_data(self.rows, self.cols, vec))
+        } else {
+            Err(SizeError::new(self.rows, self.cols, m.rows, m.cols, "Add".to_string()))
         }
-        Matrix::new_with_data(self.rows, self.cols, vec)
     }
 
     /// Performs an element-wise multiplication onto the Matrix
@@ -111,6 +117,78 @@ impl<T: Num + Clone> Matrix<T> {
     /// Pushes a value into the specified location in the Matrix
     pub fn push(&mut self, value: T, row: usize, col: usize) {
         self.data[ (row-1) * self.cols + (col-1) ] = value;
+    }
+}
+
+impl<T: Num + fmt::Display> fmt::Display for Matrix<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut buffer = String::new();
+        for i in 0..self.rows {
+            for j in 0..self.cols {
+                let value = format!("{:10.3} ", self.data[i * self.cols + j]);
+                buffer.push_str(value.trim_left());
+            }
+            
+            if i < self.rows - 1 {
+                buffer.push('\n');
+            }
+        }
+        write!(f, "{}", buffer)
+    }
+}
+
+// enum Operation {
+//     Add,
+//     Mult,
+//     Transpose,
+//     DotProduct,
+//     Index,
+//     Push,
+// }
+
+#[derive(Debug)]
+pub struct SizeError {
+    a_rows: usize,
+    a_cols: usize,
+    b_rows: usize,
+    b_cols: usize,
+    op: String,
+}
+
+impl SizeError {
+    fn new(
+        a_rows: usize, 
+        a_cols: usize, 
+        b_rows: usize, 
+        b_cols: usize, 
+        op: String 
+    ) -> SizeError 
+    {
+        SizeError {
+            a_rows: a_rows,
+            a_cols: a_cols,
+            b_rows: b_rows,
+            b_cols: b_cols,
+            op: op,
+        }
+    }
+}
+
+impl fmt::Display for SizeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "First matrix has size {}x{}, Second matrix has size {}x{} \
+            while trying to perform the {} operation",
+            self.a_rows, self.a_cols, self.b_rows, self.b_cols, self.op)
+    }
+}
+
+impl Error for SizeError {
+    fn description(&self) -> &str {
+        "matrix sizes not compatible"
+    }
+
+    fn cause(&self) -> Option<&Error> {
+        Some(self)
     }
 }
 
