@@ -44,7 +44,7 @@ fn main() {
     other.push(8, 4, 2);
     println!("mat > {:?}", mat);
     println!("other > {:?}", other);
-    let result = mat.dot(&other);
+    let result = mat.dot(&other).unwrap();
     println!("{:?}", result);
     println!("{:?}", result.index(2, 2));
 }

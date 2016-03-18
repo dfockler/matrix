@@ -20,6 +20,19 @@ pub struct Matrix<T> {
     data: Vec<T>,
 }
 
+#[derive(Debug)]
+enum Operation {
+    Add,
+    Mult,
+    DotProduct,
+}
+
+impl fmt::Display for Operation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
 /// The Matrix type allows for simple operations on an underlying Vec, as if
 /// the data was arranged in a 2D array. None of the functions in the library
 /// modify the Matrix, with the exception of `push`
@@ -60,19 +73,23 @@ impl<T: Num + Clone> Matrix<T> {
             }
             Ok(Matrix::new_with_data(self.rows, self.cols, vec))
         } else {
-            Err(SizeError::new(self.rows, self.cols, m.rows, m.cols, "Add".to_string()))
+            Err(SizeError::new(self.rows, self.cols, m.rows, m.cols, Operation::Add))
         }
     }
 
     /// Performs an element-wise multiplication onto the Matrix
     ///
     /// TODO: Add error handling to ensure size compatibility
-    pub fn mult(&self, m: &Matrix<T>) -> Matrix<T> {
-        let mut vec: Vec<T> = Vec::new(); 
-        for (a, b) in self.data.iter().zip(m.data.iter()) {
-            vec.push(a.clone() * b.clone());
+    pub fn mult(&self, m: &Matrix<T>) -> Result<Matrix<T>, SizeError> {
+        if self.rows == m.rows && self.cols == m.cols {
+            let mut vec: Vec<T> = Vec::new(); 
+            for (a, b) in self.data.iter().zip(m.data.iter()) {
+                vec.push(a.clone() * b.clone());
+            }
+            Ok(Matrix::new_with_data(self.rows, self.cols, vec))
+        } else {
+            Err(SizeError::new(self.rows, self.cols, m.rows, m.cols, Operation::Mult))
         }
-        Matrix::new_with_data(self.rows, self.cols, vec)
     }
 
     /// Transposes the Matrix and returns the resulting Matrix
@@ -88,18 +105,22 @@ impl<T: Num + Clone> Matrix<T> {
 
     /// Performs the dot product and returns the resulting Matrix
     /// TODO: Add error handling to ensure size compatibility
-    pub fn dot(&self, m: &Matrix<T>) -> Matrix<T> {
-        let mut vec: Vec<T> = Vec::new();
-        for i in 0..self.rows {
-            for j in 0..m.cols {
-                let mut sum = T::zero();
-                for k in 0..self.cols {
-                    sum = sum + self.data[i * self.cols + k].clone() * m.data[k * m.cols + j].clone();
+    pub fn dot(&self, m: &Matrix<T>) -> Result<Matrix<T>, SizeError> {
+        if self.cols == m.rows {
+            let mut vec: Vec<T> = Vec::new();
+            for i in 0..self.rows {
+                for j in 0..m.cols {
+                    let mut sum = T::zero();
+                    for k in 0..self.cols {
+                        sum = sum + self.data[i * self.cols + k].clone() * m.data[k * m.cols + j].clone();
+                    }
+                    vec.push(sum);
                 }
-                vec.push(sum);
             }
+            Ok(Matrix::new_with_data(self.rows, m.cols, vec))
+        } else {
+            Err(SizeError::new(self.rows, self.cols, m.rows, m.cols, Operation::DotProduct))
         }
-        Matrix::new_with_data(self.rows, m.cols, vec)
     }
 
     /// Returns the dimensions of the Matrix in a tuple
@@ -110,11 +131,13 @@ impl<T: Num + Clone> Matrix<T> {
 
     /// Returns the specific value at an index given by
     /// a row and column
+    // TODO add nicer index out-of-bounds error
     pub fn index(&self, row: usize, col: usize) -> T {
         self.data[(row-1) * self.cols + (col-1)].clone()
     }
 
     /// Pushes a value into the specified location in the Matrix
+    // TODO add nicer index out of bounds errors
     pub fn push(&mut self, value: T, row: usize, col: usize) {
         self.data[ (row-1) * self.cols + (col-1) ] = value;
     }
@@ -137,22 +160,13 @@ impl<T: Num + fmt::Display> fmt::Display for Matrix<T> {
     }
 }
 
-// enum Operation {
-//     Add,
-//     Mult,
-//     Transpose,
-//     DotProduct,
-//     Index,
-//     Push,
-// }
-
 #[derive(Debug)]
 pub struct SizeError {
     a_rows: usize,
     a_cols: usize,
     b_rows: usize,
     b_cols: usize,
-    op: String,
+    op: Operation,
 }
 
 impl SizeError {
@@ -161,7 +175,7 @@ impl SizeError {
         a_cols: usize, 
         b_rows: usize, 
         b_cols: usize, 
-        op: String 
+        op: Operation 
     ) -> SizeError 
     {
         SizeError {
